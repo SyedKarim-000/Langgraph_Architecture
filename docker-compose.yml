@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: dreamy_banzai
+    ports:
+      - "6333:6333"
+    volumes:
+      # This path is on your host machine, change it if you want
+      - ./qdrant_db/qdrant_data:/qdrant/storage
+    restart: unless-stopped

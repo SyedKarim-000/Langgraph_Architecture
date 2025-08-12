@@ -22,6 +22,9 @@ class Generator:
         # response =  retrieval_chain.invoke({"input":query})
         # return response['answer']
         prompt = f"Use the following context to answer the question:\n{context}\n\nQuestion: {query}"
+        prompt2 = f'''Answer based on the following context: \n{context}\n\nQuestion: {query}
+        If the portfolio consists of primarily of bank loans, populate ARBITRAGE CASH FLOW - HY CLO 
+        If the portfolio consists primarily of Small & middle market loans, Populate SMALL AND MIDDLE MARKET'''
         response = openai.chat.completions.create(
 
             model="gpt-3.5-turbo",

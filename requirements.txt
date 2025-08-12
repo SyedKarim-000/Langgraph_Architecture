@@ -10,3 +10,4 @@ langchain_openai
 streamlit
 langchain_community
 pypdf
+qdrant_client

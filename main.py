@@ -1,7 +1,8 @@
 import os
 from typing import TypedDict
 from dotenv import load_dotenv
-from modules.retriever import Retriever
+from modules.preprocessor import Preprocessor
+from modules.retriver import QdrantPDFRetriever
 from modules.grader import Grader
 from modules.generator import Generator
 from modules.rewriter import Rewriter
@@ -12,17 +13,19 @@ from langgraph.graph import StateGraph, END
 load_dotenv()
 class PortfolioState(TypedDict):
     query: str
+    subqueries: list[str]
     retrieved: list
     score: float
     answer: str
     qury_retry_count: int = 0
+   
 
 # Load knowledge base
-with open("data/knowledge_base.txt") as f:
-    docs = f.readlines()
+# with open("data/knowledge_base.txt") as f:
+#     docs = f.readlines()
 
 # retriever = Retriever(docs)
-retriever = Retriever()
+retriever = QdrantPDFRetriever()
 grader = Grader()
 prompt = ChatPromptTemplate.from_template("""
 Answer the following question based only on the provided context. 
@@ -35,9 +38,25 @@ Question: {input}""")
 generator = Generator(prompt)
 rewriter = Rewriter()
 evaluator = Evaluator()
+preprocess = Preprocessor()
+def preprocess_query_node(state):
+    query = state["query"]
+    # Example: Add context or remove noise
+    enriched_query = preprocess.extract_keywords(query)
+    state["subqueries"] = (enriched_query)
+    return state
 
 def retrieve_node(state):
     query = state["query"]
+    if not query:
+        print("❗️ No keywords extracted from the query. Ending process.")
+        return "endnode"
+    print(f"🔍 Retrieving documents for query: {query}")
+    # retrieved = []
+    # for subquery in query:
+    #     retrieved.append(retriever.retrieve(subquery))
+    
+    # state["retrieved"] = retrieved
     retrieved = retriever.retrieve(query)
     state["retrieved"] = retrieved
     return state
@@ -81,6 +100,10 @@ def end_node(state):
 
 # Build LangGraph
 builder = StateGraph(PortfolioState)
+builder.add_node("preprocess", preprocess_query_node)
+builder.set_entry_point("preprocess")
+builder.add_edge("preprocess", "retrieve")
+
 builder.add_node("retrieve", retrieve_node)
 builder.add_node("grade", grade_node)
 builder.add_node("generate", generate_node)
@@ -89,7 +112,7 @@ builder.add_node("rewrite", rewrite_node)
 builder.add_node("endnode", end_node)
 
 
-builder.set_entry_point("retrieve")
+#builder.set_entry_point("retrieve")
 builder.add_edge("retrieve", "grade")
 builder.add_edge("grade", "generate")
 builder.add_edge("generate", "evaluate")
@@ -106,7 +129,8 @@ builder.set_finish_point("endnode")
 # builder.add_edge("generate", END)
 graph = builder.compile()
 initial_state = {
-    "query": "Look for 'Asset Manager/Collater manager' name in the document ",
+    "query": "What is closing date, look for 'closing date/issue date' language ?",
+    "subqueries": [],
     "retrieved": [],
     "score": 0.0,
     "answer": "",

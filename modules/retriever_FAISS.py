@@ -12,7 +12,7 @@ from langchain_openai import OpenAIEmbeddings
 # Constants
 DB_PATH = "vector_store"
 HASH_PATH = "doc_hash.pkl"
-PDF_PATH = "./data/Ares XXXI CLO Ltd.PDF"
+PDF_PATH = "D:/Gen AI/Langgraph Architecture/Langgraph_Architecture/data/Ares XXXI CLO Ltd.PDF"
 KEYWORDS = ["Asset Manager", "Issuer", "Trustee", "Placement Agent"]
 
 # Normalized OpenAI Embeddings for cosine similarity
@@ -38,6 +38,7 @@ class Retriever:
         if os.path.exists(DB_PATH) and current_hash == previous_hash:
             print("✅ Loading cached FAISS vector store...")
             self.vectordb = FAISS.load_local(DB_PATH, embeddings, allow_dangerous_deserialization=True)
+            print(f"PDF path {PDF_PATH}")
             self.pages = PyPDFLoader(PDF_PATH).load()
         else:
             print("🛠 Building new FAISS vector store...")
